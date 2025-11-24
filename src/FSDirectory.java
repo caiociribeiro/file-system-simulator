@@ -1,10 +1,10 @@
 import java.util.ArrayList;
 import java.util.List;
 
-public class Directory extends FSNode {
+public class FSDirectory extends FSNode {
     private List<FSNode> children;
 
-    public Directory(String name, Directory parent) {
+    public FSDirectory(String name, FSDirectory parent) {
         super(name, parent);
         this.children = new ArrayList<>();
     }
