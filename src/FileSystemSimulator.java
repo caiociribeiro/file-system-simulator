@@ -21,7 +21,9 @@ public class FileSystemSimulator {
         }
     }
 
-    public String createDirectory(String[] names) {
+    public String createDirectory(String path) {
+        String[] names = path.split("/");
+
         FSDirectory node = currentDirectory;
 
         for (int i = 0; i < names.length; i++) {
@@ -33,12 +35,12 @@ public class FileSystemSimulator {
             FSNode child = node.getChildByName(name);
 
             if (child != null) {
-                if (child.getType() == "FILE") {
-                    return FSException.notADirectory(child.name());
-                }
-
                 if (i == names.length - 1) {
                     return FSException.alreadyExists(child.name());
+                }
+
+                if (child.getType() == "FILE") {
+                    return FSException.notADirectory(child.name());
                 }
 
                 node = (FSDirectory) child;
@@ -61,16 +63,62 @@ public class FileSystemSimulator {
         return newDir;
     }
 
-    public String createFile(String[] names) {
+    public String createFile(String path) {
+        String[] names = path.split("/");
+
+        FSDirectory current = currentDirectory;
+
+        for (int i = 0; i < names.length; i++) {
+            String name = names[i];
+
+            if (!isValidName(name))
+                return FSException.invalidName(name);
+
+            FSNode child = current.getChildByName(name);
+
+            if (child != null) {
+                if (i == names.length - 1)
+                    return FSException.alreadyExists(child.name());
+
+                if (child.getType() == "FILE") {
+                    return FSException.notADirectory(child.name());
+                }
+
+                current = (FSDirectory) child;
+                continue;
+            }
+
+            if (i < names.length - 1) {
+                current = createDirectory(name, current);
+                continue;
+            }
+
+            createFile(name, current);
+        }
+
         return null;
     }
 
-    private FSNode createFile(String name, FSDirectory currentDir) {
-        return null;
+    private void createFile(String name, FSDirectory currentDir) {
+        journal.log("START: touch " + name);
+        String extension = getFileExtension(name);
+        FSFile newFile = new FSFile(name, extension, currentDir);
+        currentDir.addChild(newFile);
+        saveFileSystem();
+        journal.log("COMMIT: touch " + name);
     }
 
     public String listDirectory() {
-        List<FSNode> content = currentDirectory.children();
+        return listDirectory(currentDirectory);
+    }
+
+    public String listDirectory(String path) {
+        // TODO
+        return null;
+    }
+
+    private String listDirectory(FSDirectory dir) {
+        List<FSNode> content = dir.children();
 
         if (content.isEmpty())
             return "";
@@ -181,6 +229,14 @@ public class FileSystemSimulator {
             }
         }
         return true;
+    }
+
+    private String getFileExtension(String name) {
+        int lastDotIndex = name.lastIndexOf(".");
+        if (lastDotIndex > 0 && lastDotIndex < name.length() - 1) {
+            return name.substring(lastDotIndex + 1);
+        }
+        return null;
     }
 
     public void shutdown() {

@@ -22,7 +22,9 @@ public class Shell {
         Scanner in = new Scanner(System.in);
         boolean running = true;
 
-        System.out.println("Shell running. Type 'help' to see commands.");
+        clearConsole();
+
+        System.out.println("System started. Type 'help' to see commands.");
 
         while (running) {
             System.out.print(Color.CYAN + "root@FileSystemSimulator: " + Color.RESET);
@@ -45,7 +47,7 @@ public class Shell {
                 case "exit":
                     running = false;
                     fs.shutdown();
-                    System.out.println("Shell closed");
+                    System.out.println("Shutting down.");
                     break;
 
                 case "ls":
@@ -54,8 +56,7 @@ public class Shell {
 
                 case "mkdir":
                     if (arg1 != null) {
-                        String[] names = arg1.split("/");
-                        String res = fs.createDirectory(names);
+                        String res = fs.createDirectory(arg1);
                         System.out.println(res == null ? "" : res);
                     } else {
                         System.out.println("Use: mkdir <name>");
@@ -64,8 +65,7 @@ public class Shell {
 
                 case "touch":
                     if (arg1 != null) {
-                        String[] names = arg1.split("/");
-                        String res = fs.createFile(names);
+                        String res = fs.createFile(arg1);
                         System.out.println(res == null ? "" : res);
                     } else {
                         System.out.println("Use: mkdir <name>");
@@ -79,6 +79,14 @@ public class Shell {
                     } else {
                         System.out.println("Use: 'cd <name>' or 'cd ..'");
                     }
+                    break;
+
+                case "rm":
+                    // TODO
+                    break;
+
+                case "mv":
+                    // TODO
                     break;
 
                 default:
