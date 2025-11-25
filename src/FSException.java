@@ -1,4 +1,8 @@
-public class FSException {
+public class FSException extends Exception {
+
+    public FSException(String msg) {
+        super(msg);
+    }
 
     public static String alreadyExists(String name) {
         return Color.RED + String.format("Error: %s already exists.", name) + Color.RESET;

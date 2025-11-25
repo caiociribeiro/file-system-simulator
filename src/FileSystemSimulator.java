@@ -21,7 +21,7 @@ public class FileSystemSimulator {
         }
     }
 
-    public String createDirectory(String path) {
+    public void createDirectory(String path) throws FSException {
         String[] names = path.split("/");
 
         FSDirectory node = currentDirectory;
@@ -30,17 +30,17 @@ public class FileSystemSimulator {
             String name = names[i];
 
             if (!isValidName(name))
-                return FSException.invalidName(name);
+                throw new FSException(String.format("'%s' is not a valid name.", name));
 
             FSNode child = node.getChildByName(name);
 
             if (child != null) {
                 if (i == names.length - 1) {
-                    return FSException.alreadyExists(child.name());
+                    throw new FSException(String.format("File or directory '%s' already exists.", child.name()));
                 }
 
                 if (child.getType() == "FILE") {
-                    return FSException.notADirectory(child.name());
+                    throw new FSException(String.format("'%s' is not a directory.", child.name()));
                 }
 
                 node = (FSDirectory) child;
@@ -49,8 +49,6 @@ public class FileSystemSimulator {
 
             node = createDirectory(name, node);
         }
-
-        return null;
     }
 
     private FSDirectory createDirectory(String name, FSDirectory currentDir) {
@@ -63,7 +61,7 @@ public class FileSystemSimulator {
         return newDir;
     }
 
-    public String createFile(String path) {
+    public void createFile(String path) throws FSException {
         String[] names = path.split("/");
 
         FSDirectory current = currentDirectory;
@@ -72,16 +70,16 @@ public class FileSystemSimulator {
             String name = names[i];
 
             if (!isValidName(name))
-                return FSException.invalidName(name);
+                throw new FSException(String.format("'%s' is not a valid name.", name));
 
             FSNode child = current.getChildByName(name);
 
             if (child != null) {
                 if (i == names.length - 1)
-                    return FSException.alreadyExists(child.name());
+                    throw new FSException(String.format("File or directory '%s' already exists.", child.name()));
 
                 if (child.getType() == "FILE") {
-                    return FSException.notADirectory(child.name());
+                    throw new FSException(String.format("'%s' is not a directory.", child.name()));
                 }
 
                 current = (FSDirectory) child;
@@ -95,8 +93,6 @@ public class FileSystemSimulator {
 
             createFile(name, current);
         }
-
-        return null;
     }
 
     private void createFile(String name, FSDirectory currentDir) {
@@ -124,6 +120,7 @@ public class FileSystemSimulator {
             return "";
 
         StringBuilder s = new StringBuilder();
+        s.append("\nDirectory: ").append(getPath(dir)).append("\n\n");
         s.append(Color.GREEN).append("Type   LastWriteTime         Name\n").append(Color.RESET);
         s.append(Color.GREEN).append("----   -------------------   ----\n").append(Color.RESET);
 
@@ -135,61 +132,83 @@ public class FileSystemSimulator {
         return s.toString();
     }
 
-    public String changeDirectory(String name) {
+    public void changeDirectory(String name) throws FSException {
         if (name.equals("..")) {
             if (currentDirectory.parent() == null)
-                return null;
+                return;
             currentDirectory = currentDirectory.parent();
-            return null;
+            return;
         }
 
         FSNode node = currentDirectory.getChildByName(name);
         if (node == null)
-            return FSException.notFound(name);
+            throw new FSException(String.format("File or directory '%s' not found.", name));
         if (node instanceof FSFile)
-            return FSException.notADirectory(name);
+            throw new FSException(String.format("'%s' is not a directory.", name));
 
         currentDirectory = (FSDirectory) node;
-        return null;
     }
 
-    public String rename(String oldName, String newName) {
+    public void rename(String oldName, String newName) throws FSException {
         FSNode node = currentDirectory.getChildByName(oldName);
 
         if (node == null)
-            return FSException.notFound(oldName);
+            throw new FSException(String.format("File or directory '%s' not found.", oldName));
 
         if (currentDirectory.getChildByName(newName) != null)
-            return FSException.alreadyExists(newName);
+            throw new FSException(String.format("File or directory '%s' already exists.", newName));
 
         journal.log("START: mv " + oldName + " " + newName);
         node.setName(newName);
         saveFileSystem();
         journal.log("COMMIT: mv " + oldName + " " + newName);
-
-        return null;
     }
 
-    public String delete(String name) {
-        FSNode node = currentDirectory.getChildByName(name);
+    public void delete(String path) throws FSException {
+        String[] names = path.split("/");
 
-        if (node == null)
-            return FSException.notFound(name);
+        FSDirectory parent = currentDirectory;
+        FSNode child = null;
 
-        journal.log("START: rm " + name);
-        currentDirectory.removeChild(node);
+        for (int i = 0; i < names.length; i++) {
+            child = parent.getChildByName(names[i]);
+
+            if (child == null)
+                throw new FSException(String.format("Couldn't delete in '%s'. Wrong path.", path));
+
+            if (i < names.length - 1) {
+                if (child.getType() == "FILE") {
+                    throw new FSException(String.format("'%s' is not a directory.", child.name()));
+                } else {
+                    parent = (FSDirectory) child;
+                }
+            }
+        }
+
+        if (child == null)
+            throw new FSException(String.format("Couldn't delete in '%s'. Wrong path.", path));
+
+        delete(parent, child, path);
+
+    }
+
+    private void delete(FSDirectory parent, FSNode child, String path) {
+        journal.log("START: rm " + path);
+        parent.removeChild(child);
         saveFileSystem();
-        journal.log("COMMIT: rm " + name);
-
-        return null;
+        journal.log("COMMIT: rm " + path);
     }
 
     public String currentPath() {
-        if (currentDirectory == root)
+        return getPath(currentDirectory);
+    }
+
+    private String getPath(FSNode node) {
+        if (node == root)
             return "/";
 
         StringBuilder path = new StringBuilder();
-        FSDirectory current = currentDirectory;
+        FSNode current = node;
         while (current != null && current.parent() != null) {
             path.insert(0, "/" + current.name());
             current = current.parent();
