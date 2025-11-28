@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class Journal {
-    private static final String LOG_FILE = "journal.log";
+    private static final String LOG_FILE = ".journal";
     private PrintWriter writer;
 
     public Journal() {

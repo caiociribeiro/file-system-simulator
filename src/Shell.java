@@ -52,7 +52,13 @@ public class Shell {
                         break;
 
                     case "ls":
-                        System.out.println(fs.listDirectory());
+                        if (arg1 != null && arg2 == null) {
+                            System.out.println(fs.listDirectory(arg1));
+                        } else if (arg1 == null) {
+                            System.out.println(fs.listDirectory());
+                        } else {
+                            System.out.println("Use: ls [path]");
+                        }
                         break;
 
                     case "mkdir":
@@ -88,10 +94,32 @@ public class Shell {
                         break;
 
                     case "mv":
-                        // TODO
+                        if (arg1 != null && arg2 != null) {
+                            fs.rename(arg1, arg2);
+                        } else {
+                            System.out.println("Use: mv <oldname> <newname>");
+                        }
+                        break;
+
+                    case "cp":
+                        if (arg1 != null && arg2 != null) {
+                            fs.copy(arg1, arg2);
+                        } else {
+                            System.out.println("Use: cp <src> <dst>");
+                        }
                         break;
 
                     case "help":
+                        System.out.println("Commands:");
+                        System.out.println("ls <path>      - List directory");
+                        System.out.println("mkdir <path>   - Create directory");
+                        System.out.println("touch <path>   - Create file");
+                        System.out.println("cd <path>      - Change directory");
+                        System.out.println("rm <path>      - Remove file or directory");
+                        System.out.println("mv <old> <new> - Rename file or directory");
+                        System.out.println("cp <src> <dst> - Copy file");
+                        System.out.println("clear          - Clear screen");
+                        System.out.println("exit           - Exit shell");
                         break;
 
                     default:

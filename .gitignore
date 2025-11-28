@@ -3,3 +3,5 @@ filesystem.dat
 bin
 .class
 .vscode
+TestRunner.java
+/tests
